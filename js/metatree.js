@@ -5,9 +5,14 @@ var meta = function() {
         init: function(outlet) {
             this.outlet = outlet; } });
 
+    var iterator = linkage.type({
+        init: function(focus, target) {
+            this.focus = focus;
+            this.target = target; } });
+
     var node = linkage.type({
-        init: function(type, spec) {
-            this.type = type;
+        init: function(spec) {
+            this.type = spec.type;
             this.inlet = spec.inlet || emptyinlet(this);
             this.outlets = spec.outlets || []; },
 
@@ -41,36 +46,50 @@ var meta = function() {
             else {
                 return false; } },
 
-        execute: function(focus, target) {
-            
-        }
-    });
+        execute: function(it) {
+            return this.type.body(this, it); } });
 
     var emptynode = linkage.type([node], {
         empty: function() {
             return true; } });
 
     var type = linkage.type({
-        init: function(spec, node) {
-            this.node = spec.node || emptynode();
+        init: function(spec) {
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
             this.slug = spec.slug || 'type'; },
 
         generate: function(spec) {
-            return node(this); } });
+            return node({type: this}); } });
 
     var iftype = linkage.type([type], {
-        init: function(node) {
+        init: function() {
             arguments.callee.uber({
                 slug: 'if',
-                node: node, 
                 outlets: 3,
-                body: function(focus, target) {
-                    if (node.outlets[0] && focus.compare(node.outlets[0])) {
-                        return node.outlets[1].execute(focus, target); }
+                body: function(node, it) {
+                    if (node.outlets[0] && it.focus.compare(node.outlets[0])) {
+                        if (node.outlets[1]) {
+                            return node.outlets[1].execute(it); }
+                        else {
+                            return it; } }
+                    else if (node.outlets[2]) {
+                        return node.outlets[2].execute(it); }
                     else {
-                        return node.outlets[2].execute(focus, target); } } }); } });
+                        return it; } } }); } });
+
+    var movefocusuptype = linkage.type([type], {
+        init: function() {
+            arguments.callee.uber({
+                slug: 'movefocusup',
+                outlets: 1,
+                body: function(node, it) {
+                    if (it.focus.inlet) {
+                        it.focus = it.focus.inlet; }
+                    if (node.outlets[0]) {
+                        return node.outlets[0].execute(it); }
+                    else {
+                        return it; } } }); } });
 
     var tree = linkage.type({
         init: function(spec) {
@@ -78,7 +97,7 @@ var meta = function() {
         }
     });
 
-    var iterator = linkage.type({
-        
-    });
-}();
+    return {
+        type: type,
+        node: node,
+        tree: tree }; }();
