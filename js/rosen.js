@@ -21,8 +21,8 @@ var rosen = function() {
 
         var resize = function(e) {
             browser.dim(window.innerWidth, window.innerHeight);
-            canvas.width = browser.width;
-            canvas.height = browser.height;
+            canvas.width = browser.width * 0.9;
+            canvas.height = browser.height * 0.9;
         };
 
         window.onresize = resize;
