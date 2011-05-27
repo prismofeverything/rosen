@@ -1,10 +1,4 @@
 var meta = function() {
-    var inlet = linkage.type({});
-
-    var emptyinlet = linkage.type({
-        init: function(outlet) {
-            this.outlet = outlet; } });
-
     var iterator = linkage.type({
         init: function(focus, target) {
             this.focus = focus;
@@ -13,11 +7,8 @@ var meta = function() {
     var node = linkage.type({
         init: function(spec) {
             this.type = spec.type;
-            this.inlet = spec.inlet || emptyinlet(this);
+            this.inlet = spec.inlet;
             this.outlets = spec.outlets || []; },
-
-        empty: function() {
-            return false; },
 
         open: function() {
             if (this.type.outlets.length - this.outlets.length > 0) {
@@ -31,10 +22,11 @@ var meta = function() {
                 path.inlet = this;
                 this.outlets.push(path);
                 return this.outlets.last(); }
-            else { return null; } },
+            else {
+                return null; } },
 
         compare: function(other) {
-            if (this.type.slug == other.type.slug) {
+            if (this.type.shares(other.type)) {
                 var same = true;
                 var ll = 0;
                 while (same && ll < other.outlets.length) {
@@ -56,17 +48,16 @@ var meta = function() {
                 born.outlets.push(this.outlets[o].replicate()); }
             return born; } });
 
-    var emptynode = linkage.type([node], {
-        empty: function() {
-            return true; } });
-
     var type = linkage.type({
         init: function(spec) {
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
-            this.slug = spec.slug || 'type'; },
+            this.key = spec.key || 'type'; },
 
-        generate: function(spec) {
+        shares: function(other) {
+            return this.key === other.key; },
+
+        generate: function() {
             return node({type: this}); },
 
         flow: function(node, it, path) {
@@ -79,7 +70,7 @@ var meta = function() {
     var iftype = linkage.type([type], {
         init: function(spec) {
             arguments.callee.uber({
-                slug: 'if',
+                key: 'if',
                 outlets: 3,
                 body: function(node, it) {
                     if (node.outlets[0] && it.focus.compare(node.outlets[0])) {
@@ -87,60 +78,93 @@ var meta = function() {
                     else {
                         return node.type.flow(node, it, 2); } } }); } });
 
-    var movefocusuptype = linkage.type([type], {
+    var moveuptype = linkage.type([type], {
         init: function(spec) {
+            this.element = spec.element || 'focus';
             arguments.callee.uber({
-                slug: 'movefocusup',
+                key: 'moveup',
                 outlets: 1,
                 body: function(node, it) {
-                    if (it.focus.inlet) {
-                        it.focus = it.focus.inlet; }
-                    return node.type.flow(node, it, 0); } }); } });
+                    if (it[element].inlet) {
+                        it[element] = it[element].inlet; }
+                    return node.type.flow(node, it, 0); } }); },
 
-    var movefocusdowntype = linkage.type([type], {
-        init: function(spec) {
-            var outlet = spec.outlet || 0;
-            arguments.callee.uber({
-                slug: 'movefocusdown',
-                outlets: 1,
-                body: function(node, it) {
-                    if (it.focus.outlet[outlet]) {
-                        it.focus = it.focus.outlet[outlet]; }
-                    return node.type.flow(node, it, 0); } }); } });
+        shares: function(other) {
+            return this.key === other.key && this.element === other.element; } });
 
-    var movetargetuptype = linkage.type([type], {
+    var movedowntype = linkage.type([type], {
         init: function(spec) {
+            this.element = spec.element || 'focus';
+            this.outlet = spec.outlet || 0;
             arguments.callee.uber({
-                slug: 'movetargetup',
+                key: 'movedown',
                 outlets: 1,
                 body: function(node, it) {
-                    if (it.target.inlet) {
-                        it.target = it.target.inlet; }
-                    return node.type.flow(node, it, 0); } }); } });
+                    if (it[element].outlet[outlet]) {
+                        it[element] = it[element].outlet[outlet]; }
+                    return node.type.flow(node, it, 0); } }); },
 
-    var movetargetdowntype = linkage.type([type], {
-        init: function(spec) {
-            var outlet = spec.outlet || 0;
-            arguments.callee.uber({
-                slug: 'movetargetdown',
-                outlets: 1,
-                body: function(node, it) {
-                    if (it.target.outlet[outlet]) {
-                        it.target = it.target.outlet[outlet]; }
-                    return node.type.flow(node, it, 0); } }); } });
+        shares: function(other) {
+            return this.key === other.key &&
+                this.element === other.element &&
+                this.outlet === other.outlet; } });
 
     var jointype = linkage.type({
         init: function(spec) {
             arguments.callee.uber({
-                slug: 'join',
+                key: 'join',
                 outlets: 2,
                 body: function(node, it) {
                     if (it.target.open()) {
                         it.target.join(node.outlets[0].replicate()); }
                     return node.type.flow(node, it, 1); } }); } });
 
+    var splicetype = linkage.type({
+        init: function(spec) {
+            this.outlet = spec.outlet || 0;
+            arguments.callee.uber({
+                key: 'splice',
+                outlets: 2,
+                body: function(node, it) {
+                    if (it.target.type.outlets > this.outlet) {
+                        var spliced = node.outlets[0].replicate();
+                        if (it.target.outlets.length > this.outlet) {
+                            spliced.outlets[0] = it.target.outlets[outlet]; }
+                        it.target.outlets[outlet] = spliced; }
+                    return node.type.flow(node, it, 1); } }); },
+
+        shares: function(other) {
+            return this.key === other.key &&
+                this.element === other.element &&
+                this.outlet === other.outlet; } });
+
+    var types = {
+        if: iftype(),
+        join: jointype() };
+
+    for (var outlet = 0; outlet < 3; outlet++) {
+        types['splice'+outlet] = splicetype({outlet: outlet});
+        for (var to in {focus: 1, target: 1}) {
+            types['movedown'+to+outlet] = movedowntype({element: to, outlet: outlet});
+            if (outlet === 0) {
+                types['moveup'+to] = moveuptype({element: to}); } } }
+
+    var typekeys = [];
+    for (var key in types) {
+        typekeys.push(key); }
+
     var tree = linkage.type({
-        init: function(spec) {} });
+        init: function(spec) {
+            this.root = spec.root || types['if'].generate(); } });
+
+    var diagram = linkage.type({
+        init: function(spec) {
+            this.environment = spec.environment || function() { return 0; };
+            this.metabolism = tree();
+            this.repair = tree();
+            this.behavior = tree();
+        }
+    });
 
     return {
         type: type,
