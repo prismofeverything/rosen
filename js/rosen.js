@@ -10,9 +10,9 @@ var rosen = function() {
     var circle = function(x, y, radius, color) {
         context.fillStyle = color;
         context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI*2, true); 
+        context.arc(x, y, radius, 0, Math.PI*2, true);
         context.closePath();
-        context.fill();        
+        context.fill();
     };
 
     var init = function() {
