@@ -46,7 +46,28 @@ var meta = function() {
             var born = node(spec);
             for (var o = 0; o < this.outlets.length; o++) {
                 born.outlets.push(this.outlets[o].replicate()); }
-            return born; } });
+            return born; },
+
+        code: function() {
+            var output = '(' + this.type.key;
+            for (var oo = 0; oo < this.outlets.length; oo++) {
+                output += ' ' + this.outlets[oo].code(); }
+            return output + ')'; } });
+
+    var environmentnode = linkage.type({
+        init: function(spec) {
+            this.generator = spec.generator || function() { return Math.random(); }; },
+
+        open: function() { return true; },
+        
+        join: function(path) {},
+
+        compare: function(other) {},
+
+        execute: function(it) { return it; },
+
+        replicate: function() { return this; }
+    });
 
     var type = linkage.type({
         init: function(spec) {
@@ -67,6 +88,12 @@ var meta = function() {
             else {
                 return it; } } });
 
+    function randomPointer() {
+        return Math.random() > 0.5 ? 'focus' : 'target'; }
+
+    function randomOutlet() {
+        return Math.floor(Math.random() * 2.5); }
+
     var iftype = linkage.type([type], {
         init: function(spec) {
             arguments.callee.uber({
@@ -80,7 +107,7 @@ var meta = function() {
 
     var moveuptype = linkage.type([type], {
         init: function(spec) {
-            this.element = spec.element || 'focus';
+            this.element = spec.element || randomPointer();
             arguments.callee.uber({
                 key: 'moveup',
                 outlets: 1,
@@ -94,8 +121,8 @@ var meta = function() {
 
     var movedowntype = linkage.type([type], {
         init: function(spec) {
-            this.element = spec.element || 'focus';
-            this.outlet = spec.outlet || 0;
+            this.element = spec.element || randomPointer();
+            this.outlet = spec.outlet || randomOutlet();
             arguments.callee.uber({
                 key: 'movedown',
                 outlets: 1,
@@ -109,7 +136,7 @@ var meta = function() {
                 this.element === other.element &&
                 this.outlet === other.outlet; } });
 
-    var jointype = linkage.type({
+    var jointype = linkage.type([type], {
         init: function(spec) {
             arguments.callee.uber({
                 key: 'join',
@@ -119,9 +146,9 @@ var meta = function() {
                         it.target.join(node.outlets[0].replicate()); }
                     return node.type.flow(node, it, 1); } }); } });
 
-    var splicetype = linkage.type({
+    var splicetype = linkage.type([type], {
         init: function(spec) {
-            this.outlet = spec.outlet || 0;
+            this.outlet = spec.outlet || randomOutlet();
             arguments.callee.uber({
                 key: 'splice',
                 outlets: 2,
@@ -155,18 +182,44 @@ var meta = function() {
 
     var tree = linkage.type({
         init: function(spec) {
-            this.root = spec.root || types['if'].generate(); } });
+            this.root = spec.root || types['if'].generate(); },
+
+        execute: function() {
+            return this.root.execute(this.it); },
+
+        code: function() {
+            return this.root.code(); } });
 
     var diagram = linkage.type({
         init: function(spec) {
-            this.environment = spec.environment || function() { return 0; };
-            this.metabolism = tree();
-            this.repair = tree();
-            this.behavior = tree();
-        }
-    });
+            var generator = spec.environment || spec.e || function() { return Math.random(); };
+            this.environment = environmentnode({generator: generator});
+            this.metabolism = spec.metabolism || spec.m || tree({});
+            this.repair = spec.repair || spec.r || tree({});
+            this.behavior = spec.behavior || spec.b || tree({});
+
+            this.metabolism.it = iterator(this.environment, this.behavior.root);
+            this.repair.it = iterator(this.behavior.root, this.metabolism.root);
+            this.behavior.it = iterator(this.metabolism.root, this.repair.root); } });
+
+    function randomTypeKey() {
+        var typekey;
+        while(!typekey) {
+            typekey = typekeys[Math.floor(Math.random() * typekeys.length)]; }
+        return typekey;
+    }
+
+    function randomTree(depth) {
+        var pod = types[randomTypeKey()].generate();
+        if (depth > 0) {
+            for (var ii = 0; ii < pod.type.outlets; ii++) {
+                var subpod = randomTree(depth-1);
+                pod.outlets.push(subpod); } }
+        return pod; };
 
     return {
         type: type,
         node: node,
-        tree: tree }; }();
+        tree: tree,
+        diagram: diagram,
+        random: randomTree }; }();
