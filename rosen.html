@@ -26,6 +26,7 @@
   </head>
   <body>
     <div id="rosen">
+      <canvas id="canvas" />
     </div>
   </body>
 </html>
@@ -55,7 +56,7 @@
         ll.x *= sin(time) * 0.5 + 0.5;
         ll.y *= sin(time*1.5) * 0.5 + 0.5;
         float dd = dot(ll, pace);
-        gl_FragColor = vec4(red, dd, dot(pace, pace), 1.0);
+        gl_FragColor = vec4(red, dd, ll.y, 1.0);
     }
 </script>
 

@@ -48,10 +48,14 @@ var meta = function() {
                 born.outlets.push(this.outlets[o].replicate()); }
             return born; },
 
-        code: function() {
-            var output = '(' + this.type.key;
+        code: function(level) {
+            level = level || 0;
+            var padding = '';
+            for (var pp = 0; pp < level; pp++) {
+                padding += '  '; }
+            var output = '\n'+padding+'(' + this.type.signature();
             for (var oo = 0; oo < this.outlets.length; oo++) {
-                output += ' ' + this.outlets[oo].code(); }
+                output += ' ' + this.outlets[oo].code(level+1); }
             return output + ')'; } });
 
     var environmentnode = linkage.type({
@@ -59,20 +63,18 @@ var meta = function() {
             this.generator = spec.generator || function() { return Math.random(); }; },
 
         open: function() { return true; },
-        
         join: function(path) {},
-
         compare: function(other) {},
-
         execute: function(it) { return it; },
-
         replicate: function() { return this; }
     });
 
     var type = linkage.type({
         init: function(spec) {
+            this.probability = spec.probability || 1;
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
+            this.signature = spec.signature || function() { return this.key; };
             this.key = spec.key || 'type'; },
 
         shares: function(other) {
@@ -96,9 +98,10 @@ var meta = function() {
 
     var iftype = linkage.type([type], {
         init: function(spec) {
-            arguments.callee.uber({
+            arguments.callee.uber.call(this, {
                 key: 'if',
                 outlets: 3,
+                probability: 5,
                 body: function(node, it) {
                     if (node.outlets[0] && it.focus.compare(node.outlets[0])) {
                         return node.type.flow(node, it, 1); }
@@ -108,9 +111,12 @@ var meta = function() {
     var moveuptype = linkage.type([type], {
         init: function(spec) {
             this.element = spec.element || randomPointer();
-            arguments.callee.uber({
+            arguments.callee.uber.call(this, {
                 key: 'moveup',
                 outlets: 1,
+                signature: function() {
+                    return this.key + " " + this.element; },
+
                 body: function(node, it) {
                     if (it[element].inlet) {
                         it[element] = it[element].inlet; }
@@ -123,9 +129,12 @@ var meta = function() {
         init: function(spec) {
             this.element = spec.element || randomPointer();
             this.outlet = spec.outlet || randomOutlet();
-            arguments.callee.uber({
+            arguments.callee.uber.call(this, {
                 key: 'movedown',
                 outlets: 1,
+                signature: function() {
+                    return this.key + " " + this.element + " " + this.outlet; },
+
                 body: function(node, it) {
                     if (it[element].outlet[outlet]) {
                         it[element] = it[element].outlet[outlet]; }
@@ -138,9 +147,10 @@ var meta = function() {
 
     var jointype = linkage.type([type], {
         init: function(spec) {
-            arguments.callee.uber({
+            arguments.callee.uber.call(this, {
                 key: 'join',
                 outlets: 2,
+                probability: 3,
                 body: function(node, it) {
                     if (it.target.open()) {
                         it.target.join(node.outlets[0].replicate()); }
@@ -149,9 +159,12 @@ var meta = function() {
     var splicetype = linkage.type([type], {
         init: function(spec) {
             this.outlet = spec.outlet || randomOutlet();
-            arguments.callee.uber({
+            arguments.callee.uber.call(this, {
                 key: 'splice',
                 outlets: 2,
+                signature: function() {
+                    return this.key + " " + this.outlet; },
+
                 body: function(node, it) {
                     if (it.target.type.outlets > this.outlet) {
                         var spliced = node.outlets[0].replicate();
@@ -177,8 +190,13 @@ var meta = function() {
                 types['moveup'+to] = moveuptype({element: to}); } } }
 
     var typekeys = [];
-    for (var key in types) {
+    var key;
+    for (key in types) {
         typekeys.push(key); }
+
+    var keywheel = linkage.wheel();
+    for (key in types) {
+        keywheel.add(key, types[key].probability); }
 
     var tree = linkage.type({
         init: function(spec) {
@@ -203,11 +221,7 @@ var meta = function() {
             this.behavior.it = iterator(this.metabolism.root, this.repair.root); } });
 
     function randomTypeKey() {
-        var typekey;
-        while(!typekey) {
-            typekey = typekeys[Math.floor(Math.random() * typekeys.length)]; }
-        return typekey;
-    }
+        return keywheel.spin(); }
 
     function randomTree(depth) {
         var pod = types[randomTypeKey()].generate();
@@ -215,11 +229,15 @@ var meta = function() {
             for (var ii = 0; ii < pod.type.outlets; ii++) {
                 var subpod = randomTree(depth-1);
                 pod.outlets.push(subpod); } }
-        return pod; };
+        return pod; }
 
     return {
         type: type,
+        types: types,
+        typekeys: typekeys,
+        keywheel: keywheel,
         node: node,
         tree: tree,
         diagram: diagram,
-        random: randomTree }; }();
+        random: randomTree,
+        randomKey: randomTypeKey }; }();

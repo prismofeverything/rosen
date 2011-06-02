@@ -155,6 +155,25 @@ var linkage = function() {
 	    return that;
     };
     
+    var wheel = type({
+        init: function() {
+            this.scope = 0;
+            this.slots = []; },
+
+        add: function(item, probability) {
+            this.scope += probability;
+            this.slots.push({item: item, probability: probability}); },
+
+        spin: function() {
+            var wheee = Math.random() * this.scope;
+            var seek = 0;
+            var chosen;
+            while (wheee > 0) {
+                chosen = this.slots[seek].item;
+                wheee -= this.slots[seek].probability;
+                seek += 1; }
+            return chosen; } });
+
     // provide a means to call any chain of properties or functions by string
     var access = function(obj, entry) {
 	    if (entry) {
@@ -174,6 +193,7 @@ var linkage = function() {
         type: type,
         cache: cache,
         link: link,
+        wheel: wheel,
         access: access
     };
 
