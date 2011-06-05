@@ -100,10 +100,12 @@ var meta = function() {
                 return false; } },
 
         execute: function(it) {
-            console.log('  ' + this.type.signature() + ': (' + it.focus.type.key + ',' + it.target.type.key + ')');
+            console.log('  ' + this.type.signature() +
+                        ': (' + it.focus.type.key + ',' + it.target.type.key + ')');
 
-            if (this.leaf()) {
-                this.passes += 1; }
+            // if (this.leaf()) {
+            //     this.passes += 1; }
+            this.passes += 1;
             return this.type.body(this, it); },
 
         replicate: function() {
@@ -120,9 +122,6 @@ var meta = function() {
 
         purge: function() {
             for (var p = 0; p < this.outlets.length; p++) {
-                if (!this.outlets[p]) {
-                    console.log('purge: no outlet '+p);
-                    console.log(this); }
                 if (this.outlets[p].leaf() && this.outlets[p].passes > this.outlets[p].type.limit) {
                     this.clip(p); }
                 else {
@@ -145,35 +144,13 @@ var meta = function() {
                 output += ' ' + this.outlets[oo].code(level+1); }
             return output + ')'; } });
 
-    var environmentnode = linkage.type({
-        init: function(spec) {
-            this.generator = spec.generator || function() { return Math.random(); };
-            this.outlets = [];
-            this.inlet = emptynode();
-            this.type = {
-                key: 'environment',
-                outlets: 0,
-                limit: -1,
-                signature: function() { return this.key; } }; },
-
-        leaf: function() { return true; },
-        open: function() { return false; },
-        join: function(path) {},
-        fix: function(path, outlet) {},
-        compare: function(other) {},
-        execute: function(it) { return it; },
-        replicate: function() { return this; },
-        purge: function() {},
-        depth: function() { return 1; },
-        code: function() { return 'environment'; } });
-
     var type = linkage.type({
         init: function(spec) {
             this.probability = spec.probability || 1;
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
             this.signature = spec.signature || function() { return this.key; };
-            this.limit = spec.limit || 3;
+            this.limit = spec.limit || 11;
             this.key = spec.key || 'type'; },
 
         shares: function(other) {
@@ -255,8 +232,18 @@ var meta = function() {
         init: function(spec) {
             arguments.callee.uber.call(this, {
                 key: 'join',
+                outlets: 1,
+                probability: 1,
+                body: function(node, it) {
+                    it.target.join(it.focus.type.generate()); 
+                    return node.type.flow(node, it, 0); } }); } });
+
+    var attachtype = linkage.type([type], {
+        init: function(spec) {
+            arguments.callee.uber.call(this, {
+                key: 'attach',
                 outlets: 2,
-                probability: 3,
+                probability: 4,
                 body: function(node, it) {
                     it.target.join(node.outlets[0].replicate()); 
                     return node.type.flow(node, it, 1); } }); } });
@@ -270,6 +257,30 @@ var meta = function() {
                     it.target.passes = 0;
                     return node.type.flow(node, it, 0); } }); } });
 
+    var inserttype = linkage.type([type], {
+        init: function(spec) {
+            this.outlet = spec.outlet || randomOutlet();
+            arguments.callee.uber.call(this, {
+                key: 'insert',
+                outlets: 1,
+                probability: 4,
+                signature: function() {
+                    return this.key + "-" + this.outlet; },
+
+                body: function(node, it) {
+                    var spliced = it.focus.type.generate();
+                    var outlet = this.outlet < it.target.type.outlets ?
+                        this.outlet : (it.target.type.outlets - 1);
+                    if (!it.target.outlets[outlet].empty) {
+                        spliced.join(it.target.outlets[outlet]); }
+                    it.target.outlets[outlet] = spliced; 
+                    return node.type.flow(node, it, 0); } }); },
+
+        shares: function(other) {
+            return this.key === other.key &&
+                this.element === other.element &&
+                this.outlet === other.outlet; } });
+
     var splicetype = linkage.type([type], {
         init: function(spec) {
             this.outlet = spec.outlet || randomOutlet();
@@ -280,10 +291,10 @@ var meta = function() {
                     return this.key + "-" + this.outlet; },
 
                 body: function(node, it) {
-                    var spliced = node.outlets[0].replicate();
+                    var spliced = node.outlets[0].replicate();;
                     if (this.outlet < it.target.type.outlets) {
                         if (!it.target.outlets[this.outlet].empty) {
-                        spliced.join(it.target.outlets[this.outlet]); }
+                            spliced.join(it.target.outlets[this.outlet]); }
                         it.target.outlets[this.outlet] = spliced; }
                     return node.type.flow(node, it, 1); } }); },
 
@@ -293,11 +304,13 @@ var meta = function() {
                 this.outlet === other.outlet; } });
 
     var types = {
-        if: iftype({condition: conditions.random}),
+        if: iftype({condition: conditions.compare}),
         join: jointype(),
-        renew: renewtype() };
+        renew: renewtype(),
+        attach: attachtype()};
 
     for (var outlet = 0; outlet < 3; outlet++) {
+        types['insert'+outlet] = inserttype({outlet: outlet});
         types['splice'+outlet] = splicetype({outlet: outlet});
         for (var to in {focus: 1, target: 1}) {
             types['movedown'+to+outlet] = movedowntype({element: to, outlet: outlet});
@@ -312,6 +325,31 @@ var meta = function() {
     var keywheel = linkage.wheel();
     for (key in types) {
         keywheel.add(key, types[key].probability); }
+
+    var environmentnode = linkage.type({
+        init: function(spec) {
+            var generator = spec.generator || function() { return Math.random(); };
+            this.generator = generator;
+            this.outlets = [];
+            this.inlet = emptynode();
+            this.type = {
+                key: 'environment',
+                outlets: 0,
+                limit: -1,
+                generate: function() {
+                    return types[keywheel.spectrum(generator())].generate(); },
+                signature: function() { return this.key; } }; },
+
+        leaf: function() { return true; },
+        open: function() { return false; },
+        join: function(path) {},
+        fix: function(path, outlet) {},
+        compare: function(other) {},
+        execute: function(it) { return it; },
+        replicate: function() { return this; },
+        purge: function() {},
+        depth: function() { return 1; },
+        code: function() { return 'environment'; } });
 
     var tree = linkage.type({
         init: function(spec) {
@@ -363,8 +401,9 @@ var meta = function() {
             console.log('repair: ');
             this.repair.cycle();
             console.log('behavior: ');
-            this.behavior.cycle();
-
+            this.behavior.cycle(); },
+        
+        purge: function() {
             this.metabolism.purge();
             this.repair.purge();
             this.behavior.purge(); }, 

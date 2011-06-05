@@ -164,15 +164,18 @@ var linkage = function() {
             this.scope += probability;
             this.slots.push({item: item, probability: probability}); },
 
-        spin: function() {
-            var wheee = Math.random() * this.scope;
+        spectrum: function(point) {
+            var wheee = point * this.scope;
             var seek = 0;
             var chosen;
             while (wheee > 0) {
                 chosen = this.slots[seek].item;
                 wheee -= this.slots[seek].probability;
                 seek += 1; }
-            return chosen; } });
+            return chosen; },
+
+        spin: function() {
+            return this.spectrum(Math.random()); } });
 
     // provide a means to call any chain of properties or functions by string
     var access = function(obj, entry) {
