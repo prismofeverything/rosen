@@ -63,9 +63,6 @@ var meta = function() {
 
         openOutlet: function() {
             for (var oo = 0; oo < this.outlets.length; oo++) {
-                if (!this.outlets[oo]) {
-                    console.log('no outlet '+oo);
-                    console.log(this); }
                 if (this.outlets[oo] && this.outlets[oo].empty) {
                     return oo; } }
             return -1; },
@@ -218,9 +215,10 @@ var meta = function() {
                     return this.key + "-" + this.element + "-" + this.outlet; },
 
                 body: function(node, it) {
-                    if (this.outlet < it[this.element].type.outlets
-                        && !it[this.element].outlets[this.outlet].empty) {
-                        it[this.element] = it[this.element].outlets[this.outlet]; }
+                    var outlet = (this.outlet < it[this.element].type.outlets) ?
+                        this.outlet : (it[this.element].type.outlets - 1);
+                    if (outlet >= 0 && !it[this.element].outlets[outlet].empty) {
+                        it[this.element] = it[this.element].outlets[outlet]; }
                     return node.type.flow(node, it, 0); } }); },
 
         shares: function(other) {
@@ -344,9 +342,9 @@ var meta = function() {
         open: function() { return false; },
         join: function(path) {},
         fix: function(path, outlet) {},
-        compare: function(other) {},
+        compare: function(other) {return this.generator() > 0.5; },
         execute: function(it) { return it; },
-        replicate: function() { return this; },
+        replicate: function() { return environmentnode({generator: generator}); },
         purge: function() {},
         depth: function() { return 1; },
         code: function() { return 'environment'; } });
