@@ -21,12 +21,13 @@
     <script src="js/three/Three.js" type="text/javascript"></script>
     <script src="js/RequestAnimationFrame.js" type="text/javascript"></script>
     <script src="js/metatree.js" type="text/javascript"></script>
+    <script src="js/yellow.js" type="text/javascript"></script>
     <script src="js/rosen.js" type="text/javascript"></script>
     <link href="css/rosen.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
     <div id="rosen">
-      <canvas id="canvas" />
+      <canvas id="canvas"></canvas>
     </div>
   </body>
 </html>
@@ -56,8 +57,8 @@
         ll.x *= sin(time) * 0.5 + 0.5;
         ll.y *= sin(time*1.5) * 0.5 + 0.5;
         float dd = dot(ll, pace);
-        gl_FragColor = vec4(red, dd, ll.y, 1.0);
+        gl_FragColor = vec4(red, dd, pace.x, 1.0);
     }
 </script>
 
-<script type="text/javascript">window.onload = rosen.init</script>
+<script type="text/javascript">window.onload = yellow.init</script>
