@@ -193,6 +193,7 @@ var meta = function() {
             arguments.callee.uber.call(this, {
                 key: 'moveup',
                 outlets: 1,
+                probability: 2,
                 signature: function() {
                     return this.key + "-" + this.element; },
 
@@ -211,6 +212,7 @@ var meta = function() {
             arguments.callee.uber.call(this, {
                 key: 'movedown',
                 outlets: 1,
+                probability: 3,
                 signature: function() {
                     return this.key + "-" + this.element + "-" + this.outlet; },
 
@@ -231,7 +233,7 @@ var meta = function() {
             arguments.callee.uber.call(this, {
                 key: 'join',
                 outlets: 1,
-                probability: 1,
+                probability: 2,
                 body: function(node, it) {
                     it.target.join(it.focus.type.generate()); 
                     return node.type.flow(node, it, 0); } }); } });
@@ -241,7 +243,6 @@ var meta = function() {
             arguments.callee.uber.call(this, {
                 key: 'attach',
                 outlets: 2,
-                probability: 4,
                 body: function(node, it) {
                     it.target.join(node.outlets[0].replicate()); 
                     return node.type.flow(node, it, 1); } }); } });
@@ -261,7 +262,7 @@ var meta = function() {
             arguments.callee.uber.call(this, {
                 key: 'insert',
                 outlets: 1,
-                probability: 4,
+                probability: 1,
                 signature: function() {
                     return this.key + "-" + this.outlet; },
 
@@ -304,12 +305,12 @@ var meta = function() {
     var types = {
         if: iftype({condition: conditions.compare}),
         join: jointype(),
-        renew: renewtype(),
-        attach: attachtype()};
+        // attach: attachtype(),
+        renew: renewtype() };
 
     for (var outlet = 0; outlet < 3; outlet++) {
         types['insert'+outlet] = inserttype({outlet: outlet});
-        types['splice'+outlet] = splicetype({outlet: outlet});
+        // types['splice'+outlet] = splicetype({outlet: outlet});
         for (var to in {focus: 1, target: 1}) {
             types['movedown'+to+outlet] = movedowntype({element: to, outlet: outlet});
             if (outlet === 0) {
