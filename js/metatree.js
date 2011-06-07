@@ -188,7 +188,7 @@ var meta = function() {
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
             this.signature = spec.signature || function() { return this.key; };
-            this.limit = spec.limit || 20;
+            this.limit = spec.limit || 5;
             this.key = spec.key || 'type'; },
 
         shares: function(other) {
@@ -205,7 +205,7 @@ var meta = function() {
         return Math.random() > 0.5 ? 'focus' : 'target'; }
 
     function randomOutlet() {
-        return Math.floor(Math.random() * 2.5); }
+        return Math.floor(Math.random() * 1.9999); }
 
     var conditions = {
         compare: function(match) {
