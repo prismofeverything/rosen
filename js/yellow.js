@@ -51,9 +51,9 @@ var yellow = function() {
             diagram.clean();
             diagram.cycle();
             diagram.purge();
-            drawtree(diagram.metabolism.root, diagram.metabolism.depth(), 1, 400, 100, "#5555bb");
-            drawtree(diagram.behavior.root, diagram.behavior.depth(), 1, 700, 200, "#88ee55");
-            drawtree(diagram.repair.root, diagram.repair.depth(), 1, 1000, 60, "#ccaa55");
+            drawtree(diagram.metabolism.root, diagram.metabolism.depth(), 1, 0.2 * browser.width, 0.2 * browser.height, "#5555bb");
+            drawtree(diagram.behavior.root, diagram.behavior.depth(), 1, 0.5 * browser.width, 0.4 * browser.height, "#88ee55");
+            drawtree(diagram.repair.root, diagram.repair.depth(), 1, 0.7 * browser.width, 0.1 * browser.height, "#ccaa55");
         }, 50);
 
         circle(500, 300, 50, "#ffcc33"); };
