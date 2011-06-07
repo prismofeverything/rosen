@@ -158,11 +158,16 @@ var linkage = function() {
     var wheel = type({
         init: function() {
             this.scope = 0;
-            this.slots = []; },
+            this.slots = [];
+            this.oddsmap = {}; },
 
         add: function(item, probability) {
             this.scope += probability;
+            this.oddsmap[''+item] = probability;
             this.slots.push({item: item, probability: probability}); },
+
+        odds: function(item) {
+	        return this.oddsmap[''+item]; },
 
         spectrum: function(point) {
             var wheee = point * this.scope;
