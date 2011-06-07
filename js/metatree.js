@@ -25,7 +25,7 @@ var meta = function() {
         compare: function(other) { return other.empty; },
         execute: function(it) { return it; },
         replicate: function() { return emptynode(); },
-        purge: function() {},
+        purge: function(depth, level) {},
         depth: function() { return 0; },
         code: function() { return '@'; } });
 
@@ -131,7 +131,8 @@ var meta = function() {
             return clipped; },
 
         balanced: function() {
-            if (this._depth) { return {full: this._full, depth: this._depth}; }
+            if (this._full != undefined) {
+                return {full: this._full, depth: this._depth}; }
             else {
                 var result = this.outlets[0].balanced();
                 for (var oo = 1; oo < this.outlets.length; oo++) {
@@ -145,17 +146,18 @@ var meta = function() {
                 this._full = result.full;
                 return result; } },
 
-        purge: function() {
+        purge: function(depth, level) {
             var clipped = undefined;
+            var solidity = 100.0 / depth;
             for (var p = 0; p < this.outlets.length; p++) {
-                if (this.outlets[p].leaf() && this.outlets[p].passes > this.outlets[p].type.limit) {
+                if (this.outlets[p].leaf() && this.outlets[p].passes > solidity) {
                     clipped = this;
                     this.clip(p); }
                 else {
                     this._depth = undefined;
                     this._full = undefined;
-                    this.outlets[p].purge(); } }
-            return clipped; },
+                    this.outlets[p].purge(depth, level+1); } }
+                return clipped; }, 
 
         depth: function() {
             if (this._depth) { return this._depth; }
@@ -236,8 +238,12 @@ var meta = function() {
                     return this.key + "-" + this.condition.signature(); },
                 body: function(node, it) {
                     if (this.condition.discern(node, it)) {
+                        if (node.outlets[0].empty) {
+                            return node.type.flow(node, it, 1); }
                         return node.type.flow(node, it, 0); }
                     else {
+                        if (node.outlets[1].empty) {
+                            return node.type.flow(node, it, 0); }
                         return node.type.flow(node, it, 1); } } }); } });
 
     var moveuptype = linkage.type([type], {
@@ -417,7 +423,7 @@ var meta = function() {
         compare: function(other) {return this.generator() > 0.5; },
         execute: function(it) { return it; },
         replicate: function() { return environmentnode({generator: generator}); },
-        purge: function() {},
+        purge: function(depth, level) {},
         depth: function() { return 1; },
         code: function() { return 'environment'; } });
 
@@ -434,7 +440,13 @@ var meta = function() {
             return this.root.execute(this.it); },
 
         purge: function() {
-            return this.root.purge(); },
+            if (this.root.leaf()) {
+                var sprout = types[keywheel.spin()].generate();
+                sprout.join(this.root);
+                this.root = sprout;
+                return this.root; }
+            else {
+                return this.root.purge(this.root.depth(), 1); } },
 
         depth: function() {
             return this.root.depth(); },

@@ -27,10 +27,7 @@ var yellow = function() {
                 context.closePath();
                 context.stroke();
 
-                drawtree(tree.outlets[oo], depth, level+1, newx, newy, color);
-            }
-        }
-    }
+                drawtree(tree.outlets[oo], depth, level+1, newx, newy, color); } } }
 
     var diagram = meta.diagram({depth: 11});
 
@@ -52,7 +49,7 @@ var yellow = function() {
             diagram.cycle();
             diagram.purge();
             drawtree(diagram.metabolism.root, diagram.metabolism.depth(), 1, 0.2 * browser.width, 0.2 * browser.height, "#5555bb");
-            drawtree(diagram.behavior.root, diagram.behavior.depth(), 1, 0.5 * browser.width, 0.4 * browser.height, "#88ee55");
+            drawtree(diagram.behavior.root, diagram.behavior.depth(), 1, 0.45 * browser.width, 0.3 * browser.height, "#88ee55");
             drawtree(diagram.repair.root, diagram.repair.depth(), 1, 0.7 * browser.width, 0.1 * browser.height, "#ccaa55");
         }, 50);
 
