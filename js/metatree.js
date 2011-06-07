@@ -146,13 +146,16 @@ var meta = function() {
                 return result; } },
 
         purge: function() {
+            var clipped = undefined;
             for (var p = 0; p < this.outlets.length; p++) {
                 if (this.outlets[p].leaf() && this.outlets[p].passes > this.outlets[p].type.limit) {
+                    clipped = this;
                     this.clip(p); }
                 else {
                     this._depth = undefined;
                     this._full = undefined;
-                    this.outlets[p].purge(); } } },
+                    this.outlets[p].purge(); } }
+            return clipped; },
 
         depth: function() {
             if (this._depth) { return this._depth; }
@@ -209,8 +212,8 @@ var meta = function() {
             match = match || 'if';
             return {
                 discern: function(node, it) {
-                    return it.focus.type.signature() === match; },
-                    //return it.focus.type.key === match; },
+                    // return it.focus.type.signature() === match; },
+                    return it.focus.type.key === match; },
                 signature: function() {
                     return match; } }; },
 
@@ -375,19 +378,14 @@ var meta = function() {
                 types['moveup-'+to] = moveuptype({element: to}); } } }
 
     var totalif = 0;
-    for (key in types) {
-        var condition = conditions.compare(key);
-        var ifkey = 'if-'+key;
-        var odds = (types[key].probability + 2) / 3;
+    var keys = ['if', 'grow', 'renew', 'moveup', 'movedown'];
+    for (var k = 0; k < keys.length; k++) {
+        var condition = conditions.compare(keys[k]);
+        var ifkey = 'if-'+keys[k];
+        var odds = 2;
         totalif += odds;
         types[ifkey] = iftype({condition: condition, probability: odds}); }
-
-    var ifcondition = {
-        discern: function(node, it) {
-            return it.focus.type.key == 'if'; },
-        signature: function() {
-            return 'if'; } };
-    types['if-if'] = iftype({condition: ifcondition, probability: totalif}); 
+    types['if-if'] = iftype({condition: conditions.compare('if'), probability: 5}); 
 
     var typekeys = [];
     for (key in types) {
@@ -485,9 +483,18 @@ var meta = function() {
             this.behavior.cycle(); },
         
         purge: function() {
-            this.metabolism.purge();
-            this.repair.purge();
-            this.behavior.purge(); }, 
+            var m = this.metabolism.purge();
+            var r = this.repair.purge();
+            var b = this.behavior.purge();
+
+            if (b) {
+                this.metabolism.it.target = b;
+                this.repair.it.focus = b; }
+            if (m) {
+                this.repair.it.target = m;
+                this.behavior.it.focus = m; }
+            if (r) { this.behavior.it.target = r; }
+        }, 
 
         clean: function() {
             this.metabolism.clean();
