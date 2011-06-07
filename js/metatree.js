@@ -149,7 +149,7 @@ var meta = function() {
 
         purge: function(depth, level) {
             var clipped = undefined;
-            var solidity = maxlevel / level;
+            var solidity = 1.01 * maxlevel / level;
             for (var p = 0; p < this.outlets.length; p++) {
                 if (level > maxlevel || this.outlets[p].leaf() && this.outlets[p].passes > solidity) {
                     clipped = this;
