@@ -20,6 +20,7 @@ var meta = function() {
         openOutlet: function() { return -1; },
         balanced: function() { return {full: true, depth: 0}; },
         join: function(path) {},
+        clean: function() {},
         fix: function(path, outlet) {},
         compare: function(other) { return other.empty; },
         execute: function(it) { return it; },
@@ -75,21 +76,25 @@ var meta = function() {
 
         fill: function(path) {
             if (this.balanced().full) { return false; }
+            // if (Math.random() < 0.001) { return false; }
+
             var shallow = 0;
             var shallowdepth = 9999901;
             for (var oo = 0; oo < this.outlets.length; oo++) {
                 if (this.outlets[oo].empty) {
                     this.fix(path, oo);
                     return true; }
-                else if (this.outlets[oo].balanced().depth < shallowdepth) {
+                else if (this.outlets[oo].balanced().depth <= shallowdepth) {
                     shallowdepth = this.outlets[oo].balanced().depth;
                     shallow = oo; } }
 
             if (this.outlets[shallow].balanced().full) {
                 this.outlets[shallow].append(path);
                 return true; }
-            else {
-                return this.outlets[shallow].fill(path); } },
+            else { // if (this.outlets[shallow].balanced().depth < this.balanced().depth - 1) {
+                return this.outlets[shallow].fill(path); }
+
+            return false; },
 
         compare: function(other) {
             if (this.type.shares(other.type)) {
@@ -107,8 +112,8 @@ var meta = function() {
                 return false; } },
 
         execute: function(it) {
-            console.log('  ' + this.type.signature() +
-                        ': (' + it.focus.type.key + ',' + it.target.type.key + ')');
+            // console.log('  ' + this.type.signature() +
+            //             ': (' + it.focus.type.key + ',' + it.target.type.key + ')');
 
             this.passes += 1;
             return this.type.body(this, it); },
@@ -150,11 +155,19 @@ var meta = function() {
                     this.outlets[p].purge(); } } },
 
         depth: function() {
+            if (this._depth) { return this._depth; }
             var deepest = 0;
             for (var oo = 0; oo < this.outlets.length; oo++) {
                 var far = this.outlets[oo].depth() + 1;
                 deepest = far > deepest ? far : deepest; }
+            this._depth = deepest;
             return deepest; },
+
+        clean: function() {
+            this._depth = undefined;
+            this._full = undefined;
+            for (var oo = 0; oo < this.outlets.length; oo++) {
+                this.outlets[oo].clean(); } },
 
         code: function(level) {
             level = level || 0;
@@ -172,7 +185,7 @@ var meta = function() {
             this.body = spec.body || function() {};
             this.outlets = spec.outlets || [];
             this.signature = spec.signature || function() { return this.key; };
-            this.limit = spec.limit || 5;
+            this.limit = spec.limit || 20;
             this.key = spec.key || 'type'; },
 
         shares: function(other) {
@@ -193,10 +206,11 @@ var meta = function() {
 
     var conditions = {
         compare: function(match) {
-            match = match || 'attach';
+            match = match || 'if';
             return {
                 discern: function(node, it) {
                     return it.focus.type.signature() === match; },
+                    //return it.focus.type.key === match; },
                 signature: function() {
                     return match; } }; },
 
@@ -430,6 +444,9 @@ var meta = function() {
         code: function() {
             return this.root.code(); },
 
+        clean: function() {
+            return this.root.clean(); },
+
         cycle: function() {
             this.it = this.execute(); } });
 
@@ -460,17 +477,22 @@ var meta = function() {
             this.behavior.it = iterator(this.metabolism.root, this.repair.root, this.metabolism, this.repair); },
 
         cycle: function() {
-            console.log('metabolism: ');
+            //console.log('metabolism: ');
             this.metabolism.cycle();
-            console.log('repair: ');
+            //console.log('repair: ');
             this.repair.cycle();
-            console.log('behavior: ');
+            //console.log('behavior: ');
             this.behavior.cycle(); },
         
         purge: function() {
             this.metabolism.purge();
             this.repair.purge();
             this.behavior.purge(); }, 
+
+        clean: function() {
+            this.metabolism.clean();
+            this.repair.clean();
+            this.behavior.clean(); }, 
 
         depth: function() {
             return {
