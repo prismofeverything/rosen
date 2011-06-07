@@ -6,6 +6,7 @@ var meta = function() {
             this.focustree = focustree;
             this.targettree = targettree; } });
 
+    var maxlevel = 50;
     var emptynode = linkage.type({
         init: function(spec) {
             this.empty = true;
@@ -51,17 +52,16 @@ var meta = function() {
             return this.openOutlet() >= 0; },
 
         openOutlet: function() {
-            for (var oo = 0; oo < this.outlets.length; oo++) {
+            for (var oo = this.outlets.length - 1; oo >= 0; oo--) {
                 if (this.outlets[oo] && this.outlets[oo].empty) {
                     return oo; } }
             return -1; },
 
         join: function(path) {
-            var position = this.openOutlet();
-            if (position >= 0) {
-                path.inlet = this;
-                this.outlets[position] = path;
-                return position; }
+            var outlet = this.openOutlet();
+            if (outlet >= 0) {
+                this.fix(path, outlet);
+                return outlet; }
             else {
                 return -1; } },
 
@@ -71,12 +71,12 @@ var meta = function() {
             return this.outlets[outlet]; },
 
         append: function(path) {
+            var outlet = this.outlets.length - 1;
             if (!(this.join(path) >= 0)) {
-                this.outlets[0].append(path); } },
+                this.outlets[outlet].append(path); } },
 
         fill: function(path) {
             if (this.balanced().full) { return false; }
-            // if (Math.random() < 0.001) { return false; }
 
             var shallow = 0;
             var shallowdepth = 9999901;
@@ -91,7 +91,8 @@ var meta = function() {
             if (this.outlets[shallow].balanced().full) {
                 this.outlets[shallow].append(path);
                 return true; }
-            else { // if (this.outlets[shallow].balanced().depth < this.balanced().depth - 1) {
+            // top-grower
+            else  if (this.outlets[shallow].balanced().depth < this.balanced().depth - 1) {
                 return this.outlets[shallow].fill(path); }
 
             return false; },
@@ -148,16 +149,16 @@ var meta = function() {
 
         purge: function(depth, level) {
             var clipped = undefined;
-            var solidity = 100.0 / depth;
+            var solidity = maxlevel / level;
             for (var p = 0; p < this.outlets.length; p++) {
-                if (this.outlets[p].leaf() && this.outlets[p].passes > solidity) {
+                if (level > maxlevel || this.outlets[p].leaf() && this.outlets[p].passes > solidity) {
                     clipped = this;
                     this.clip(p); }
                 else {
                     this._depth = undefined;
                     this._full = undefined;
                     this.outlets[p].purge(depth, level+1); } }
-                return clipped; }, 
+            return clipped; }, 
 
         depth: function() {
             if (this._depth) { return this._depth; }
@@ -214,7 +215,6 @@ var meta = function() {
             match = match || 'if';
             return {
                 discern: function(node, it) {
-                    // return it.focus.type.signature() === match; },
                     return it.focus.type.key === match; },
                 signature: function() {
                     return match; } }; },
