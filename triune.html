@@ -162,14 +162,10 @@
         vec3 colorOrbit = vec3(0.5, 1.0, 1.0);
         vec3 colorMouse = vec3(1.0, 1.0, 1.0);
         vec3 colorObelisk = vec3(0.0, 1.0, 1.0);
-        // vec3 colorOrbit = vec3(1.0, 1.0, 0.0);
-        // vec3 colorMouse = vec3(0.0, 0.0, 1.0);
 
         float radiusOrbit = sqrt(dot(frag - orbit, frag - orbit));
         float radiusMouse = sqrt(dot(frag - flect, frag - flect));
         float radiusObelisk = sqrt(dot(frag - obelisk, frag - obelisk));
-        // float radiusOrbit = dot(frag - orbit, frag - orbit);
-        // float radiusMouse = dot(frag - flect, frag - flect);
 
         float scale = 40.0;
         float totalPortion = radiusOrbit + radiusMouse + radiusObelisk;
@@ -180,19 +176,9 @@
         intensity = clamp(intensity, 0.0, 0.7);
         vec3 blend = colorOrbit*portionOrbit+colorMouse*portionMouse+colorObelisk*portionObelisk;
         blend = blend*intensity;
-        // blend.x = blend.x - 0.3;
-        // if (blend.x < 0.0) {
-        //     blend.x = blend.x + 1.0;
-        // }
 
         vec3 rgb = hsltorgb(blend);
         gl_FragColor = vec4(rgb, 1.0);
-        // gl_FragColor = vec4(intensity, intensity, intensity, 1.0);
-
-        // if ((1.0/radiusOrbit + 1.0/radiusMouse) < scale) {
-        // } else {
-        //     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        // }
     }
 </script>
 
