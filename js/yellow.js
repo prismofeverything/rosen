@@ -17,7 +17,7 @@ var yellow = function() {
         uniforms = {
             time: { type: "f", value: 1.0 },
             resolution: { type: "v2", value: new THREE.Vector2() },
-            mouse: { type: 'v2', value: new THREE.Vector2() }
+            mouse: { type: 'v2', value: new THREE.Vector2({x: 400, y: 400}) }
         };
 
         material = new THREE.MeshShaderMaterial({

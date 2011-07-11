@@ -88,6 +88,7 @@
         float correlation = (1.0/r1 + 1.0/r2);
         float power = pow(correlation, cutoff);
         vec3 metaball = ((color1/r1) + (color2/r2)) * power;
+
         // float portion1 = r1 / (r1 + r2);
         // float portion2 = r2 / (r1 + r2);
         // // vec3 metaball = ((portion1 * color1) + (portion2 * color2)) * power;
