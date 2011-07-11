@@ -2,7 +2,6 @@ var yellow = function() {
     var container;
     var camera, scene, renderer;
     var uniforms, material, mesh;
-    var mouseX = 0, mouseY = 0;
 
     var init = function() {
         initGL();
