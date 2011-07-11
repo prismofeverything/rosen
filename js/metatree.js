@@ -92,7 +92,7 @@ var meta = function() {
                 this.outlets[shallow].append(path);
                 return true; }
             // top-grower
-            else  if (this.outlets[shallow].balanced().depth < this.balanced().depth - 1) {
+            else if (this.outlets[shallow].balanced().depth < this.balanced().depth - 1) {
                 return this.outlets[shallow].fill(path); }
 
             return false; },
